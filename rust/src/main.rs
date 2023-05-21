@@ -7,14 +7,67 @@ use crossterm::{
 };
 use std::{env::args, ffi::OsStr, fs::read_to_string, io, thread, time::Duration};
 use tui::{
-    backend::CrosstermBackend,
+    backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, List, ListItem},
+    widgets::{Block, Borders, List, ListItem, ListState},
     Terminal,
 };
 use walkdir::WalkDir;
 use yaml_rust::{scanner::ScanError, Yaml, YamlLoader};
+
+struct StatefulList<T> {
+    state: ListState,
+    items,
+}
+
+impl<T> StatefulList<T> {
+    fn with_items(items: Vec<T>) -> StatefulList<T> {
+        StatefulList {
+            state: ListState::default(),
+            items,
+        }
+    }
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i))
+    }
+
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items.len() - 1;
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i))
+    }
+
+    fn unselect(&mut self) {
+        self.state.select(None);
+    }
+}
+
+struct App<'a> {
+    items: StatefulList<(&'a str, usize)>,
+    events: Vec<(&'a str, &'a str)>
+}
+
+impl<'a> App<'a> {
+}
 
 struct MarkdownFile {
     name: String,
