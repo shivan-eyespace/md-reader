@@ -1,3 +1,6 @@
+pub mod file_reader;
+pub mod interface;
+
 #[cfg(test)]
 mod tests {
     #[test]
