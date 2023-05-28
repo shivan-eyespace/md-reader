@@ -12,12 +12,8 @@ fn main() {
         None => path = Utf8PathBuf::from(arguments.get(0).expect("Unexpected error!")),
     };
     let markdown_files = collect_files(path);
-    _ = draw(
-        markdown_files
-            .iter()
-            .enumerate()
-            .map(|e| (e.1.name.as_str(), e.0))
-            .collect(),
-    )
-    .unwrap();
+    match markdown_files {
+        Some(files) => draw(files.iter().enumerate().map(|e| (e.1, e.0)).collect()).unwrap(),
+        None => eprint!("No Markdown files found."),
+    }
 }

@@ -15,6 +15,9 @@ use tui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
 };
+
+use crate::file_reader::MarkdownFile;
+
 struct StatefulList<T> {
     state: ListState,
     items: Vec<T>,
@@ -60,11 +63,11 @@ impl<T> StatefulList<T> {
 }
 
 struct App<'a> {
-    items: StatefulList<(&'a str, usize)>,
+    items: StatefulList<(&'a MarkdownFile, usize)>,
 }
 
 impl<'a> App<'a> {
-    fn new(items: Vec<(&'a str, usize)>) -> App<'a> {
+    fn new(items: Vec<(&'a MarkdownFile, usize)>) -> App<'a> {
         App {
             items: StatefulList::with_items(items),
         }
@@ -110,7 +113,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .items
         .iter()
         .map(|i| {
-            let lines = vec![Spans::from(i.0)];
+            let lines = vec![Spans::from(i.0.name.to_string())];
             ListItem::new(lines).style(Style::default().fg(Color::Black).bg(Color::White))
         })
         .collect();
@@ -130,15 +133,26 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, chunks[0], &mut app.items.state);
 
-    let text = "test";
-    let content = Paragraph::new(text)
-        .block(Block::default().title("Contents").borders(Borders::ALL))
+    let selected_item = match app.items.state.selected() {
+        Some(i) => app
+            .items
+            .items
+            .get(i)
+            .expect("Unexpected Error")
+            .0
+            .content
+            .to_string(),
+        None => "None Selected...".to_string(),
+    };
+
+    let content = Paragraph::new(selected_item)
+        .block(Block::default().title("Content").borders(Borders::ALL))
         .style(Style::default().fg(Color::White).bg(Color::Black))
         .alignment(Alignment::Left)
         .wrap(Wrap { trim: true });
     f.render_widget(content, chunks[1])
 }
-pub fn draw(items: Vec<(&str, usize)>) -> Result<(), io::Error> {
+pub fn draw(items: Vec<(&MarkdownFile, usize)>) -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;

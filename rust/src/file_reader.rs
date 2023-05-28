@@ -10,19 +10,14 @@ pub struct MarkdownFile {
     pub content: String,
 }
 
-pub fn collect_files(path: Utf8PathBuf) -> Vec<MarkdownFile> {
-    // TODO: need to do something when there are no files.
+pub fn collect_files(path: Utf8PathBuf) -> Option<Vec<MarkdownFile>> {
     println!("Analysing path: {}", path.to_string().blue());
     match path.try_exists() {
         Ok(true) => println!("{}", "Valid path.".green()),
         _ => {
             println!("{}", "Invalid path.".red());
-            panic!();
+            return None;
         }
-    }
-    match path.is_dir() {
-        true => println!("Searching directory."),
-        false => println!("Only single file detected."),
     }
     let mut markdown_files: Vec<MarkdownFile> = Vec::new();
     for entry in WalkDir::new(path)
@@ -42,7 +37,10 @@ pub fn collect_files(path: Utf8PathBuf) -> Vec<MarkdownFile> {
         };
         markdown_files.push(markdown_file)
     }
-    markdown_files
+    if markdown_files.is_empty() {
+        return None;
+    }
+    Some(markdown_files)
 }
 
 fn parse_frontmatter(text: &str) -> (Vec<Yaml>, String) {
