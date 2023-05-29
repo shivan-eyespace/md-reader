@@ -1,12 +1,13 @@
 use camino::Utf8PathBuf;
 use colored::Colorize;
-use std::{collections::HashMap, ffi::OsStr, fs::read_to_string};
+use linked_hash_map::LinkedHashMap;
+use std::{ffi::OsStr, fs::read_to_string};
 use walkdir::WalkDir;
 use yaml_rust::{Yaml, YamlLoader};
 
 pub struct MarkdownFile {
     pub name: String,
-    pub frontmatter: HashMap<String, String>,
+    pub frontmatter: LinkedHashMap<Yaml, Yaml>,
     pub content: String,
 }
 
@@ -43,8 +44,8 @@ pub fn collect_files(path: Utf8PathBuf) -> Option<Vec<MarkdownFile>> {
     Some(markdown_files)
 }
 
-fn parse_frontmatter(text: &str) -> (HashMap<String, String>, String) {
-    let mut yaml = HashMap::new();
+fn parse_frontmatter(text: &str) -> (LinkedHashMap<Yaml, Yaml>, String) {
+    let mut yaml = LinkedHashMap::new();
     let content_body: &str;
     match text.starts_with("---\n") {
         true => {
@@ -53,7 +54,7 @@ fn parse_frontmatter(text: &str) -> (HashMap<String, String>, String) {
             match end {
                 Some(end) => {
                     let yaml_str = &text[4..(end + 4 as usize)];
-                    yaml = parse_yaml(YamlLoader::load_from_str(yaml_str).unwrap());
+                    yaml = hash_frontmatter(YamlLoader::load_from_str(yaml_str).unwrap());
                     content_body = &text[(end + 2 * 4 as usize)..]
                 }
                 None => content_body = &text,
@@ -64,8 +65,7 @@ fn parse_frontmatter(text: &str) -> (HashMap<String, String>, String) {
     (yaml, content_body.to_string())
 }
 
-fn parse_yaml(frontmatter: Vec<Yaml>) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    map.insert("test".to_string(), "test".to_string());
-    map
+fn hash_frontmatter(yaml: Vec<Yaml>) -> LinkedHashMap<Yaml, Yaml> {
+    let doc = &yaml[0];
+    doc.clone().into_hash().unwrap()
 }

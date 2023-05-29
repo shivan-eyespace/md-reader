@@ -4,7 +4,6 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::{
-    collections::HashMap,
     io,
     time::{Duration, Instant},
 };
@@ -143,13 +142,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             let mut spans: Vec<Span> = vec![];
             for (key, value) in frontmatter.iter() {
                 spans.push(Span::styled(
-                    format!("{}: ", key),
+                    format!("{}: ", key.as_str().unwrap().to_string()),
                     Style::default().add_modifier(Modifier::BOLD),
                 ));
                 spans.push(Span::styled(
-                    value,
+                    format!("{}", value.as_str().unwrap().to_string()),
                     Style::default().add_modifier(Modifier::ITALIC),
-                ))
+                ));
+                spans.push(Span::styled("\n", Style::default()))
             }
             spans.push(Span::styled(content, Style::default()));
             Spans::from(spans)
