@@ -114,7 +114,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .iter()
         .map(|i| {
             let lines = vec![Spans::from(i.0.name.to_string())];
-            ListItem::new(lines).style(Style::default().fg(Color::Black).bg(Color::White))
+            ListItem::new(lines).style(Style::default())
         })
         .collect();
 
@@ -126,38 +126,48 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .highlight_style(
             Style::default()
-                .bg(Color::LightGreen)
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::UNDERLINED),
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol(">");
     f.render_stateful_widget(items, chunks[0], &mut app.items.state);
 
     let text = match app.items.state.selected() {
-        // TODO add line breaks between front matter and content
         Some(i) => {
             let selected = app.items.items.get(i).expect("Unexpected Error").0;
             let frontmatter = &selected.frontmatter;
             let content = &selected.content;
-            let mut spans: Vec<Span> = vec![];
+            let mut spans: Vec<Spans> = vec![];
             for (key, value) in frontmatter.iter() {
-                spans.push(Span::styled(
+                let mut keyvalue: Vec<Span> = vec![];
+                keyvalue.push(Span::styled(
                     format!("{}: ", key.as_str().unwrap().to_string()),
                     Style::default().add_modifier(Modifier::BOLD),
                 ));
-                spans.push(Span::styled(
-                    format!("{}", value.as_str().unwrap().to_string()),
-                    Style::default().add_modifier(Modifier::ITALIC),
-                ));
-                spans.push(Span::styled("\n", Style::default()))
+                match value.as_str() {
+                    Some(value) => {
+                        keyvalue.push(Span::styled(
+                            format!("{} ", value.to_string()),
+                            Style::default(),
+                        ));
+                    }
+                    None => {
+                        keyvalue.push(Span::styled(
+                            "Empty",
+                            Style::default().add_modifier(Modifier::UNDERLINED),
+                        ));
+                    }
+                };
+                spans.push(Spans::from(keyvalue))
             }
-            spans.push(Span::styled(content, Style::default()));
-            Spans::from(spans)
+            spans.push(Spans::from(Span::styled("---", Style::default())));
+            spans.push(Spans::from(Span::styled(content, Style::default())));
+            spans
         }
-        None => Spans::from(vec![Span::styled(
+        None => vec![Spans::from(vec![Span::styled(
             "No markdown file selected.",
             Style::default(),
-        )]),
+        )])],
     };
 
     let content = Paragraph::new(text)
