@@ -4,6 +4,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::{
+    collections::HashMap,
     io,
     time::{Duration, Instant},
 };
@@ -11,7 +12,7 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::Spans,
+    text::{Span, Spans},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
 };
@@ -133,19 +134,33 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .highlight_symbol(">> ");
     f.render_stateful_widget(items, chunks[0], &mut app.items.state);
 
-    let selected_item = match app.items.state.selected() {
-        Some(i) => app
-            .items
-            .items
-            .get(i)
-            .expect("Unexpected Error")
-            .0
-            .content
-            .to_string(),
-        None => "None Selected...".to_string(),
+    let text = match app.items.state.selected() {
+        // TODO add line breaks between front matter and content
+        Some(i) => {
+            let selected = app.items.items.get(i).expect("Unexpected Error").0;
+            let frontmatter = &selected.frontmatter;
+            let content = &selected.content;
+            let mut spans: Vec<Span> = vec![];
+            for (key, value) in frontmatter.iter() {
+                spans.push(Span::styled(
+                    format!("{}: ", key),
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::styled(
+                    value,
+                    Style::default().add_modifier(Modifier::ITALIC),
+                ))
+            }
+            spans.push(Span::styled(content, Style::default()));
+            Spans::from(spans)
+        }
+        None => Spans::from(vec![Span::styled(
+            "No markdown file selected.",
+            Style::default(),
+        )]),
     };
 
-    let content = Paragraph::new(selected_item)
+    let content = Paragraph::new(text)
         .block(Block::default().title("Content").borders(Borders::ALL))
         .style(Style::default().fg(Color::White).bg(Color::Black))
         .alignment(Alignment::Left)
