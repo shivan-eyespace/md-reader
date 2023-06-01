@@ -1,4 +1,4 @@
-# Md-Viewer
+# Markdown Reader
 
 A small project for me to learn rust.
 
